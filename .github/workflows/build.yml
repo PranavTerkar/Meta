@@ -1,0 +1,41 @@
+name: Node
+
+on:
+  - push
+
+jobs:
+  deploy-page:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 16
+
+      - run: npm ci
+        working-directory: ./hardhat/
+      - run: npx hardhat compile
+        working-directory: ./hardhat/
+      - run: npx hardhat test
+        working-directory: ./hardhat/
+
+      - run: npm ci
+        working-directory: ./hardhat/app/
+      - run: npm run lint
+        working-directory: ./hardhat/app/
+      - run: npm run build
+        working-directory: ./hardhat/app/
+
+      - uses: JamesIves/github-pages-deploy-action@4.0.0
+        with:
+          branch: gh-pages
+          folder: ./hardhat/app/dist
+          single-commit: true
+          silent: false
+
+      - uses: web3-storage/add-to-web3@v2
+        with:
+          web3_token: ${{ secrets.WEB3_STORAGE_KEY }}
+          path_to_add: ./hardhat/app/dist
+      - run: echo ${{ steps.web3.outputs.cid }}
+      - run: echo ${{ steps.web3.outputs.url }}
